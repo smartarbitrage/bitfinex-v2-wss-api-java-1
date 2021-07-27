@@ -54,7 +54,7 @@ public class PositionHandler implements ChannelCallbackHandler {
      */
     @Override
     public void handleChannelData(final String action, final JSONArray payload) throws BitfinexClientException {
-        logger.info("Got position callback {}", payload.toString());
+        logger.debug("Got position callback {}", payload.toString());
 
         ArrayList<BitfinexPosition> positions = Lists.newArrayList();
         // No positions active
