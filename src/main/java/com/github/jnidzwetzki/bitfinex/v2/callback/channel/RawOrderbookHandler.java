@@ -84,7 +84,7 @@ public class RawOrderbookHandler implements ChannelCallbackHandler {
         final BigDecimal price = jsonArray.getBigDecimal(1);
         final BigDecimal amount = jsonArray.getBigDecimal(2);
 
-        return new BitfinexOrderBookEntry(orderId, price, amount, null);
+        return new BitfinexOrderBookEntry(orderId, price, amount, 0);
     }
 
     public void onOrderbookEvent(BiConsumer<BitfinexOrderBookSymbol, Collection<BitfinexOrderBookEntry>> consumer) {
