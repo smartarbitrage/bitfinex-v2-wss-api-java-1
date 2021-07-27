@@ -17,6 +17,15 @@
  *******************************************************************************/
 package com.github.jnidzwetzki.bitfinex.v2;
 
+import com.github.jnidzwetzki.bitfinex.v2.command.BitfinexCommand;
+import com.github.jnidzwetzki.bitfinex.v2.command.SetConnectionFeaturesCommand;
+import com.github.jnidzwetzki.bitfinex.v2.command.SubscribeCommand;
+import com.github.jnidzwetzki.bitfinex.v2.command.UnsubscribeChannelCommand;
+import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexApiKeyPermissions;
+import com.github.jnidzwetzki.bitfinex.v2.manager.*;
+import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexStreamSymbol;
+import com.github.jnidzwetzki.bitfinex.v2.util.EventsInTimeslotManager;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -24,22 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import com.github.jnidzwetzki.bitfinex.v2.command.BitfinexCommand;
-import com.github.jnidzwetzki.bitfinex.v2.command.SetConnectionFeaturesCommand;
-import com.github.jnidzwetzki.bitfinex.v2.command.SubscribeCommand;
-import com.github.jnidzwetzki.bitfinex.v2.command.UnsubscribeChannelCommand;
-import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexApiKeyPermissions;
-import com.github.jnidzwetzki.bitfinex.v2.manager.ConnectionFeatureManager;
-import com.github.jnidzwetzki.bitfinex.v2.manager.OrderManager;
-import com.github.jnidzwetzki.bitfinex.v2.manager.OrderbookManager;
-import com.github.jnidzwetzki.bitfinex.v2.manager.PositionManager;
-import com.github.jnidzwetzki.bitfinex.v2.manager.QuoteManager;
-import com.github.jnidzwetzki.bitfinex.v2.manager.RawOrderbookManager;
-import com.github.jnidzwetzki.bitfinex.v2.manager.TradeManager;
-import com.github.jnidzwetzki.bitfinex.v2.manager.WalletManager;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexStreamSymbol;
-import com.github.jnidzwetzki.bitfinex.v2.util.EventsInTimeslotManager;
 
 /**
  * BitfinexApiBroker client spreading amount of channels across multiple websocket connections.
@@ -65,6 +58,7 @@ public class PooledBitfinexApiBroker implements BitfinexWebsocketClient {
     private final PositionManager positionManager;
     private final WalletManager walletManager;
     private final ConnectionFeatureManager connectionFeatureManager;
+    private final FundingManager fundingManager;
 
     public PooledBitfinexApiBroker(final BitfinexWebsocketConfiguration config, final BitfinexApiCallbackRegistry callbacks,
                                    final SequenceNumberAuditor seqNoAuditor, final int channelsPerConnection) {
@@ -84,6 +78,7 @@ public class PooledBitfinexApiBroker implements BitfinexWebsocketClient {
         positionManager = new PositionManager(this, configuration.getExecutorService());
         walletManager = new WalletManager(this, configuration.getExecutorService());
         connectionFeatureManager = new ConnectionFeatureManager(this, configuration.getExecutorService());
+        fundingManager = new FundingManager(this, configuration.getExecutorService());
 
         callbackRegistry.onSubscribeChannelEvent(sym -> pendingSubscriptions.forEach((client, symbols) -> symbols.remove(sym)));
         callbackRegistry.onUnsubscribeChannelEvent(sym -> pendingSubscriptions.forEach((client, symbols) -> symbols.remove(sym)));
@@ -251,6 +246,11 @@ public class PooledBitfinexApiBroker implements BitfinexWebsocketClient {
     @Override
     public ConnectionFeatureManager getConnectionFeatureManager() {
         return connectionFeatureManager;
+    }
+
+    @Override
+    public FundingManager getFundingManager() {
+        return fundingManager;
     }
 
     private BitfinexWebsocketClient createAndConnectClient() {

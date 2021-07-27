@@ -17,6 +17,24 @@
  *******************************************************************************/
 package com.github.jnidzwetzki.bitfinex.v2;
 
+import com.github.jnidzwetzki.bitfinex.v2.callback.channel.*;
+import com.github.jnidzwetzki.bitfinex.v2.callback.command.*;
+import com.github.jnidzwetzki.bitfinex.v2.command.*;
+import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexApiKeyPermissions;
+import com.github.jnidzwetzki.bitfinex.v2.exception.AsyncRemoteException;
+import com.github.jnidzwetzki.bitfinex.v2.exception.BitfinexClientException;
+import com.github.jnidzwetzki.bitfinex.v2.exception.BitfinexCommandException;
+import com.github.jnidzwetzki.bitfinex.v2.exception.SessionLostException;
+import com.github.jnidzwetzki.bitfinex.v2.manager.*;
+import com.github.jnidzwetzki.bitfinex.v2.symbol.*;
+import com.github.jnidzwetzki.bitfinex.v2.util.BitfinexStreamSymbolToChannelIdResolverAware;
+import com.google.common.base.Stopwatch;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
@@ -29,55 +47,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.json.JSONTokener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.github.jnidzwetzki.bitfinex.v2.callback.channel.AccountInfoHandler;
-import com.github.jnidzwetzki.bitfinex.v2.callback.channel.CandlestickHandler;
-import com.github.jnidzwetzki.bitfinex.v2.callback.channel.ChannelCallbackHandler;
-import com.github.jnidzwetzki.bitfinex.v2.callback.channel.ExecutedTradeHandler;
-import com.github.jnidzwetzki.bitfinex.v2.callback.channel.OrderbookHandler;
-import com.github.jnidzwetzki.bitfinex.v2.callback.channel.RawOrderbookHandler;
-import com.github.jnidzwetzki.bitfinex.v2.callback.channel.TickHandler;
-import com.github.jnidzwetzki.bitfinex.v2.callback.command.AuthCallback;
-import com.github.jnidzwetzki.bitfinex.v2.callback.command.CommandCallbackHandler;
-import com.github.jnidzwetzki.bitfinex.v2.callback.command.ConfCallback;
-import com.github.jnidzwetzki.bitfinex.v2.callback.command.ConnectionHeartbeatCallback;
-import com.github.jnidzwetzki.bitfinex.v2.callback.command.DoNothingCommandCallback;
-import com.github.jnidzwetzki.bitfinex.v2.callback.command.ErrorCallback;
-import com.github.jnidzwetzki.bitfinex.v2.callback.command.SubscribedCallback;
-import com.github.jnidzwetzki.bitfinex.v2.callback.command.UnsubscribedCallback;
-import com.github.jnidzwetzki.bitfinex.v2.command.AuthCommand;
-import com.github.jnidzwetzki.bitfinex.v2.command.BitfinexCommand;
-import com.github.jnidzwetzki.bitfinex.v2.command.SubscribeCandlesCommand;
-import com.github.jnidzwetzki.bitfinex.v2.command.SubscribeOrderbookCommand;
-import com.github.jnidzwetzki.bitfinex.v2.command.SubscribeTickerCommand;
-import com.github.jnidzwetzki.bitfinex.v2.command.SubscribeTradesCommand;
-import com.github.jnidzwetzki.bitfinex.v2.command.UnsubscribeChannelCommand;
-import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexApiKeyPermissions;
-import com.github.jnidzwetzki.bitfinex.v2.exception.BitfinexClientException;
-import com.github.jnidzwetzki.bitfinex.v2.exception.BitfinexCommandException;
-import com.github.jnidzwetzki.bitfinex.v2.manager.ConnectionFeatureManager;
-import com.github.jnidzwetzki.bitfinex.v2.manager.OrderManager;
-import com.github.jnidzwetzki.bitfinex.v2.manager.OrderbookManager;
-import com.github.jnidzwetzki.bitfinex.v2.manager.PositionManager;
-import com.github.jnidzwetzki.bitfinex.v2.manager.QuoteManager;
-import com.github.jnidzwetzki.bitfinex.v2.manager.RawOrderbookManager;
-import com.github.jnidzwetzki.bitfinex.v2.manager.TradeManager;
-import com.github.jnidzwetzki.bitfinex.v2.manager.WalletManager;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexAccountSymbol;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexCandlestickSymbol;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexExecutedTradeSymbol;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexOrderBookSymbol;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexStreamSymbol;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexSymbols;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexTickerSymbol;
-import com.github.jnidzwetzki.bitfinex.v2.util.BitfinexStreamSymbolToChannelIdResolverAware;
-import com.google.common.base.Stopwatch;
 
 public class SimpleBitfinexApiBroker implements Closeable, BitfinexWebsocketClient {
 
@@ -150,6 +119,8 @@ public class SimpleBitfinexApiBroker implements Closeable, BitfinexWebsocketClie
 	 * The connection feature manager
 	 */
 	private final ConnectionFeatureManager connectionFeatureManager;
+
+	private final FundingManager fundingManager;
 	
 	/**
 	 * The last heartbeat value
@@ -192,6 +163,7 @@ public class SimpleBitfinexApiBroker implements Closeable, BitfinexWebsocketClie
 								   final SequenceNumberAuditor sequenceNumberAuditor, final boolean skipConnectionStateNotification) {
 		this.configuration = new BitfinexWebsocketConfiguration(config);
 		this.callbackRegistry = callbackRegistry;
+		this.fundingManager = new FundingManager(this, configuration.getExecutorService());
 		this.skipConnectionStateNotification = skipConnectionStateNotification;
 
 		this.channelIdToHandlerMap = new ConcurrentHashMap<>();
@@ -394,6 +366,9 @@ public class SimpleBitfinexApiBroker implements Closeable, BitfinexWebsocketClie
 			websocketEndpoint.sendMessage(json);
 		} catch (final BitfinexCommandException e) {
 			logger.error("Got Exception while sending command", e);
+		} catch (SessionLostException | AsyncRemoteException e) {
+			logger.error("Got exception while was trying to send message. Reconnecting", e);
+			reconnect();
 		}
 	}
 
@@ -802,5 +777,10 @@ public class SimpleBitfinexApiBroker implements Closeable, BitfinexWebsocketClie
 	@Override
 	public ConnectionFeatureManager getConnectionFeatureManager() {
 		return connectionFeatureManager;
+	}
+
+	@Override
+	public FundingManager getFundingManager() {
+		return fundingManager;
 	}
 }

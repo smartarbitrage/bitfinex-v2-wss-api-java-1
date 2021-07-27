@@ -81,6 +81,8 @@ public class BitfinexSubmittedOrder extends BitfinexNewOrder {
      */
     private boolean notify;
 
+    private String stateValue;
+
     public Long getOrderId() {
         return orderId;
     }
@@ -169,6 +171,14 @@ public class BitfinexSubmittedOrder extends BitfinexNewOrder {
 
     public void setNotify(boolean notify) {
         this.notify = notify;
+    }
+
+    public String getStateValue() {
+        return stateValue;
+    }
+
+    public void setStateValue(String stateValue) {
+        this.stateValue = stateValue;
     }
 
     @Override

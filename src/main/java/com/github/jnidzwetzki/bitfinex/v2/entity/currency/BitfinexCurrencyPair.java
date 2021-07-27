@@ -17,18 +17,17 @@
  *******************************************************************************/
 package com.github.jnidzwetzki.bitfinex.v2.entity.currency;
 
+import com.github.jnidzwetzki.bitfinex.v2.exception.BitfinexClientException;
+import com.google.common.base.Charsets;
+import com.google.common.io.Resources;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import com.github.jnidzwetzki.bitfinex.v2.exception.BitfinexClientException;
-import com.google.common.base.Charsets;
-import com.google.common.io.Resources;
 
 public class BitfinexCurrencyPair implements BitfinexInstrument {
 
@@ -58,14 +57,12 @@ public class BitfinexCurrencyPair implements BitfinexInstrument {
 				final JSONObject currency = jsonArray.getJSONObject(i);
 				final String pair = currency.getString("pair");
 
-				if(pair.length() != 6) {
-					throw new BitfinexClientException("The currency pair is not 6 chars long: " + pair);
+				if (pair.length() == 6) {
+					final double minOrderSize = currency.getDouble("minimum_order_size");
+					final String currency1 = pair.substring(0, 3).toUpperCase();
+					final String currency2 = pair.substring(3, 6).toUpperCase();
+					register(currency1, currency2, minOrderSize);
 				}
-
-				final double minOrderSize = currency.getDouble("minimum_order_size");
-				final String currency1 = pair.substring(0, 3).toUpperCase();
-				final String currency2 = pair.substring(3, 6).toUpperCase();
-				register(currency1, currency2, minOrderSize);
 			}
 
 		} catch (IOException e) {

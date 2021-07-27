@@ -17,28 +17,20 @@
  *******************************************************************************/
 package com.github.jnidzwetzki.bitfinex.v2.callback.channel;
 
+import com.github.jnidzwetzki.bitfinex.v2.callback.channel.account.info.*;
+import com.github.jnidzwetzki.bitfinex.v2.entity.*;
+import com.github.jnidzwetzki.bitfinex.v2.exception.BitfinexClientException;
+import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexAccountSymbol;
+import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexStreamSymbol;
+import org.json.JSONArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
-import org.json.JSONArray;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.github.jnidzwetzki.bitfinex.v2.callback.channel.account.info.MyExecutedTradeHandler;
-import com.github.jnidzwetzki.bitfinex.v2.callback.channel.account.info.NotificationHandler;
-import com.github.jnidzwetzki.bitfinex.v2.callback.channel.account.info.OrderHandler;
-import com.github.jnidzwetzki.bitfinex.v2.callback.channel.account.info.PositionHandler;
-import com.github.jnidzwetzki.bitfinex.v2.callback.channel.account.info.WalletHandler;
-import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexMyExecutedTrade;
-import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexPosition;
-import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexSubmittedOrder;
-import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexWallet;
-import com.github.jnidzwetzki.bitfinex.v2.exception.BitfinexClientException;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexAccountSymbol;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexStreamSymbol;
 
 public class AccountInfoHandler implements ChannelCallbackHandler {
 
@@ -55,6 +47,7 @@ public class AccountInfoHandler implements ChannelCallbackHandler {
     private final OrderHandler orderHandler;
     private final MyExecutedTradeHandler tradeHandler;
     private final NotificationHandler notificationHandler;
+    private final FundingHandler fundingChannelHandler;
 
     public AccountInfoHandler(final int channelId, final BitfinexAccountSymbol symbol) {
         this.channelId = channelId;
@@ -84,6 +77,9 @@ public class AccountInfoHandler implements ChannelCallbackHandler {
         channelHandler.put("fln", fundingHandler); // Founding loans notification
         channelHandler.put("flu", fundingHandler); // Founding loans update
         channelHandler.put("flc", fundingHandler); // Founding loans cancel
+
+        fundingChannelHandler = new FundingHandler(channelId, symbol);
+        channelHandler.put("fiu", fundingChannelHandler); // account funding info
 
         channelHandler.put("ats", new DoNothingHandler()); // Ats - Unknown
 
@@ -156,5 +152,9 @@ public class AccountInfoHandler implements ChannelCallbackHandler {
 
     public void onOrderNotification(final BiConsumer<BitfinexAccountSymbol, BitfinexSubmittedOrder> consumer) {
         notificationHandler.onOrderNotification(consumer);
+    }
+
+    public void onFundingEvent(final BiConsumer<BitfinexAccountSymbol, Collection<BitfinexFundingInfo>> consumer) {
+        fundingChannelHandler.onFundingEvent(consumer);
     }
 }

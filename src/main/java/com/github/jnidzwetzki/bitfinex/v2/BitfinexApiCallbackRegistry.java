@@ -17,22 +17,10 @@
  *******************************************************************************/
 package com.github.jnidzwetzki.bitfinex.v2;
 
-import java.util.Collection;
+import com.github.jnidzwetzki.bitfinex.v2.entity.*;
+import com.github.jnidzwetzki.bitfinex.v2.symbol.*;
 
-import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexCandle;
-import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexExecutedTrade;
-import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexMyExecutedTrade;
-import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexOrderBookEntry;
-import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexPosition;
-import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexSubmittedOrder;
-import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexTick;
-import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexWallet;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexAccountSymbol;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexCandlestickSymbol;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexExecutedTradeSymbol;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexOrderBookSymbol;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexStreamSymbol;
-import com.github.jnidzwetzki.bitfinex.v2.symbol.BitfinexTickerSymbol;
+import java.util.Collection;
 
 public final class BitfinexApiCallbackRegistry extends BitfinexApiCallbackListeners {
 
@@ -94,6 +82,12 @@ public final class BitfinexApiCallbackRegistry extends BitfinexApiCallbackListen
 
     public void acceptAuthenticationFailedEvent(final BitfinexAccountSymbol event) {
         authFailedConsumers.forEach(consumer -> consumer.accept(event));
+    }
+
+    public void acceptFundingEvent(final BitfinexAccountSymbol symbol, final Collection<BitfinexFundingInfo> fundingInfo) {
+        fundingEntryConsumers.forEach(consumer -> {
+            consumer.accept(symbol, fundingInfo);
+        });
     }
 
 }

@@ -102,6 +102,11 @@ public class NotificationHandler implements ChannelCallbackHandler {
         }
         submittedOrder.setStatus(BitfinexSubmittedOrderStatus.ERROR);
         logger.error("State for order {} is {}, reason is {}", submittedOrder.getOrderId(), state, stateValue);
+
+        if (state.equals(BitfinexSubmittedOrderStatus.ERROR.name())){
+            submittedOrder.setStateValue(stateValue);
+        }
+
         return submittedOrder;
     }
 

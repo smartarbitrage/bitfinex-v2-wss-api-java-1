@@ -17,27 +17,20 @@
  *******************************************************************************/
 package com.github.jnidzwetzki.bitfinex.v2;
 
-import javax.websocket.ClientEndpoint;
-import javax.websocket.CloseReason;
+import com.github.jnidzwetzki.bitfinex.v2.exception.AsyncRemoteException;
+import com.github.jnidzwetzki.bitfinex.v2.exception.SessionLostException;
+import com.google.common.base.Throwables;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.websocket.*;
 import javax.websocket.CloseReason.CloseCodes;
-import javax.websocket.ContainerProvider;
-import javax.websocket.DeploymentException;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
-import com.google.common.base.Throwables;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @ClientEndpoint
 public class WebsocketClientEndpoint implements Closeable {
@@ -130,12 +123,12 @@ public class WebsocketClientEndpoint implements Closeable {
 	 */
 	public void sendMessage(final String message) {
 		if(userSession == null) {
-			logger.error("Unable to send message, user session is null");
-			return;
+			logger.error("BITFINEX: Unable to send message, user session is null");
+			throw new SessionLostException("Session was Lost. Need to reconnect");
 		}
 		if(userSession.getAsyncRemote() == null) {
-			logger.error("Unable to send message, async remote is null");
-			return;
+			logger.error("BITFINEX: Unable to send message, async remote is null");
+			throw new AsyncRemoteException("Async remote is null. Need to reconnect");
 		}
 		userSession.getAsyncRemote().sendText(message);
 	}
