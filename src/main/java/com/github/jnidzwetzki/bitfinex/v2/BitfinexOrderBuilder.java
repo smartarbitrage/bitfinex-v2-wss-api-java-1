@@ -101,7 +101,7 @@ public class BitfinexOrderBuilder {
 
 	public BitfinexNewOrder build() {
 		final BitfinexNewOrder order = new BitfinexNewOrder();
-		order.setClientId(System.currentTimeMillis());
+		order.setClientId(System.currentTimeMillis() / 1000);
 		order.setCurrencyPair(symbol);
 		order.setOrderType(type);
 		order.setPrice(price);
