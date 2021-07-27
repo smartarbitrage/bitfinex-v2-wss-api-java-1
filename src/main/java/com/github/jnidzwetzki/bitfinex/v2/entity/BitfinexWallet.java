@@ -25,7 +25,8 @@ public class BitfinexWallet {
 	public enum Type {
 		EXCHANGE("exchange"),
 		MARGIN("margin"),
-		FUNDING("funding");
+		FUNDING("funding"),
+		CREDITLINE("creditline");
 
 		private final String type;
 

@@ -1,33 +1,35 @@
 /*******************************************************************************
  *
  *    Copyright (C) 2015-2018 Jan Kristof Nidzwetzki
- *  
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *  
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License. 
- *    
+ *
  *******************************************************************************/
 package com.github.jnidzwetzki.bitfinex.v2.entity.currency;
-
-import com.github.jnidzwetzki.bitfinex.v2.exception.BitfinexClientException;
-import com.google.common.base.Charsets;
-import com.google.common.io.Resources;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collection;
+import java.util.Currency;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import com.github.jnidzwetzki.bitfinex.v2.exception.BitfinexClientException;
+import com.google.common.base.Charsets;
+import com.google.common.io.Resources;
 
 public class BitfinexCurrencyPair implements BitfinexInstrument {
 
@@ -42,8 +44,8 @@ public class BitfinexCurrencyPair implements BitfinexInstrument {
 	public static final String SYMBOL_URL = "https://api.bitfinex.com/v1/symbols_details";
 
 	/**
-	 * Load and register all known currencies 
-	 * 
+	 * Load and register all known currencies
+	 *
 	 * @throws BitfinexClientException
 	 */
 	public static void registerDefaults() throws BitfinexClientException {
@@ -57,17 +59,31 @@ public class BitfinexCurrencyPair implements BitfinexInstrument {
 				final JSONObject currency = jsonArray.getJSONObject(i);
 				final String pair = currency.getString("pair");
 
-				if (pair.length() == 6) {
-					final double minOrderSize = currency.getDouble("minimum_order_size");
+//				if(pair.length() != 6) {
+//					throw new IllegalArgumentException("The currency pair is not 6 chars long: " + pair);
+//				}
+
+				final double minOrderSize = currency.getDouble("minimum_order_size");
+				if (pair.length() == 6){
 					final String currency1 = pair.substring(0, 3).toUpperCase();
 					final String currency2 = pair.substring(3, 6).toUpperCase();
 					register(currency1, currency2, minOrderSize);
+				}
+				if (pair.contains(":") && pair.contains("link")){
+					String[] pairs = pair.split(":");
+					String cur1 = pairs[0].toUpperCase();
+					String cur2 = pairs[1].toUpperCase();
+
+					//String cur1 = pair.substring(0, 4).toUpperCase();
+					//String cur2 = pair.substring(4, 7).toUpperCase();
+					//register(pairs[0], pairs[1].toUpperCase(), currency.getDouble("minimum_order_size"));
+					register(cur1, cur2, minOrderSize);
 				}
 			}
 
 		} catch (IOException e) {
 			throw new BitfinexClientException(e);
-		} 
+		}
 	}
 
 	public static void unregisterAll() {
@@ -82,12 +98,12 @@ public class BitfinexCurrencyPair implements BitfinexInstrument {
 	 * @param minimalOrderSize minimal order size
 	 * @return registered instance of {@link BitfinexCurrencyPair}
 	 */
-	public static BitfinexCurrencyPair register(final String currency, 
-			final String profitCurrency, final double minimalOrderSize) {
+	public static BitfinexCurrencyPair register(final String currency,
+												final String profitCurrency, final double minimalOrderSize) {
 
 		final String key = buildCacheKey(currency, profitCurrency);
 
-		final BitfinexCurrencyPair newCurrency = new BitfinexCurrencyPair(currency, profitCurrency, 
+		final BitfinexCurrencyPair newCurrency = new BitfinexCurrencyPair(currency, profitCurrency,
 				minimalOrderSize);
 
 		final BitfinexCurrencyPair oldCurrency = instances.putIfAbsent(key, newCurrency);
@@ -121,7 +137,7 @@ public class BitfinexCurrencyPair implements BitfinexInstrument {
 
 	/**
 	 * Build the cache key
-	 * 
+	 *
 	 * @param currency1
 	 * @param currency2
 	 * @return
@@ -140,7 +156,7 @@ public class BitfinexCurrencyPair implements BitfinexInstrument {
 	}
 
 	/**
-	 * The name of the first currency 
+	 * The name of the first currency
 	 */
 	private final String currency1;
 
@@ -181,7 +197,11 @@ public class BitfinexCurrencyPair implements BitfinexInstrument {
 	 * @param symbolString
 	 * @return
 	 */
-	public static BitfinexCurrencyPair fromSymbolString(final String symbolString) {
+	public static BitfinexCurrencyPair fromSymbolString(String symbolString) {
+
+		if (symbolString.equals("tLINK:USD")){
+			return new BitfinexCurrencyPair("LINK", "USD", 0.2);
+		}
 		for (final BitfinexCurrencyPair currency : BitfinexCurrencyPair.values()) {
 			if (currency.toBitfinexString().equalsIgnoreCase(symbolString)) {
 				return currency;

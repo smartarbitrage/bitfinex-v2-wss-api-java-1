@@ -125,7 +125,11 @@ public class BitfinexOrderBookSymbol implements BitfinexStreamSymbol {
 	 * @return
 	 */
 	public static BitfinexOrderBookSymbol fromJSON(final JSONObject jsonObject) {
-		BitfinexCurrencyPair symbol = BitfinexCurrencyPair.fromSymbolString(jsonObject.getString("symbol"));
+		String currentCurrency = jsonObject.getString("symbol");
+		BitfinexCurrencyPair symbol = BitfinexCurrencyPair.fromSymbolString(currentCurrency);;
+		if (currentCurrency.equalsIgnoreCase("tLINK:USD")){
+			symbol = BitfinexCurrencyPair.of("LINK", "USD");
+		}
 		Precision prec = Precision.valueOf(jsonObject.getString("prec"));
 		Frequency freq = null;
 		Integer len = null;

@@ -40,7 +40,14 @@ public class SubscribeOrderbookCommand implements SubscribeCommand {
 		final JSONObject subscribeJson = new JSONObject();
 		subscribeJson.put("event", "subscribe");
 		subscribeJson.put("channel", "book");
-		subscribeJson.put("symbol", symbol.getCurrencyPair().toBitfinexString());
+		String currentSymbol = symbol.getCurrencyPair().toBitfinexString();
+		if (currentSymbol.equalsIgnoreCase("tLINKUSD")){
+			currentSymbol = "tLINK:USD";
+		}
+//		if (currentSymbol.equals("tBCHNUSD")){
+//			currentSymbol = "BCHN:USD";
+//		}
+		subscribeJson.put("symbol", currentSymbol);
 		subscribeJson.put("prec", symbol.getPrecision().toString());
 		if (symbol.getFrequency() != null) {
 			subscribeJson.put("freq", symbol.getFrequency().toString());

@@ -57,6 +57,7 @@ public class SubscribedCallback implements CommandCallbackHandler {
 				break;
 			case "book":
 				symbol = handleBookCallback(jsonObject);
+				logger.info("orderbook subscibe to {}", jsonObject);
 				break;
 			default:
 				logger.error("Unknown subscribed callback {}", jsonObject.toString());

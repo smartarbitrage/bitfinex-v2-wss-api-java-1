@@ -122,6 +122,7 @@ public class OrderManager extends SimpleCallbackManager<BitfinexSubmittedOrder> 
 		}
 
 		logger.info("Updating order {}", updateOrder);
+		logger.info("Updating price before json = {}", updateOrder.getPrice());
 		final UpdateOrderCommand updateOrderCommand = new UpdateOrderCommand(updateOrder);
 		client.sendCommand(updateOrderCommand);
 	}
