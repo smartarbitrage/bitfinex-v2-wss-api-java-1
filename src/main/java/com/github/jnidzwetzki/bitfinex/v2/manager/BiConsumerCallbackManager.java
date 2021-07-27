@@ -114,9 +114,6 @@ public class BiConsumerCallbackManager<S, T> extends AbstractManager {
 			return;
 		}
 
-		callbackList.forEach((c) -> {
-			final Runnable runnable = () -> c.accept(symbol, element);
-			executorService.submit(runnable);
-		});
+		callbackList.forEach(c -> c.accept(symbol, element));
 	}
 }

@@ -26,16 +26,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import com.github.jnidzwetzki.bitfinex.v2.command.*;
 import org.bboxdb.commons.Retryer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.jnidzwetzki.bitfinex.v2.BitfinexWebsocketClient;
-import com.github.jnidzwetzki.bitfinex.v2.command.BitfinexCommands;
-import com.github.jnidzwetzki.bitfinex.v2.command.OrderCancelAllCommand;
-import com.github.jnidzwetzki.bitfinex.v2.command.OrderCancelCommand;
-import com.github.jnidzwetzki.bitfinex.v2.command.OrderCancelGroupCommand;
-import com.github.jnidzwetzki.bitfinex.v2.command.OrderNewCommand;
 import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexApiKeyPermissions;
 import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexNewOrder;
 import com.github.jnidzwetzki.bitfinex.v2.entity.BitfinexSubmittedOrder;
@@ -117,6 +113,17 @@ public class OrderManager extends SimpleCallbackManager<BitfinexSubmittedOrder> 
 		}
 
 		notifyCallbacks(exchangeOrder);
+	}
+
+	public void submitUpdateOrder(final BitfinexSubmittedOrder updateOrder) {
+		BitfinexApiKeyPermissions apiKeyPermissions = client.getApiKeyPermissions();
+		if(!apiKeyPermissions.isOrderWritePermission()) {
+			throw new BitfinexClientException("Unable to update the order " + updateOrder.getOrderId() + " connection has not enough capabilities: " + apiKeyPermissions);
+		}
+
+		logger.info("Updating order {}", updateOrder);
+		final UpdateOrderCommand updateOrderCommand = new UpdateOrderCommand(updateOrder);
+		client.sendCommand(updateOrderCommand);
 	}
 
 
