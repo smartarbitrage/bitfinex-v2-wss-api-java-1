@@ -362,8 +362,14 @@ public class SimpleBitfinexApiBroker implements Closeable, BitfinexWebsocketClie
 				});
 			}
 			final String json = command.getCommand(this);
-            logger.debug("Sent: {}", command);
-			websocketEndpoint.sendMessage(json);
+
+			String json_command = json;
+			if (json.contains("tLINKUSD") && json.contains("EXCHANGE LIMIT")){
+				json_command = json.replace("tLINKUSD", "tLINK:USD");
+			}
+
+			logger.debug("Sent: {}", command);
+			websocketEndpoint.sendMessage(json_command);
 		} catch (final BitfinexCommandException e) {
 			logger.error("Got Exception while sending command", e);
 		} catch (SessionLostException | AsyncRemoteException e) {
